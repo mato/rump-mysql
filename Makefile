@@ -57,7 +57,7 @@ build/mysql_native_stamp: build/mysql_patch_stamp
 #
 CROSS_DIR=$(abspath build/mysql/build-cross)
 # TODO: Detect where app-tools are installed.
-RUMP_ROOT=/home/mato/projects/rumpkernel/rumprun-xen/rump
+RUMP_ROOT=/home/mato/projects/rumpkernel/rumprun/rump
 build/mysql_cross_cmake_stamp: build/mysql_native_stamp
 	mkdir $(CROSS_DIR) || true
 	cd $(CROSS_DIR) && cmake \

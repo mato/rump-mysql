@@ -1,7 +1,7 @@
 #
 # Cross-build script for MySQL on rumprun-xen
 #
-all: mysql
+all: mysql images
 
 .PHONY: mysql
 mysql: build/mysql_cross_build_stamp
@@ -79,6 +79,16 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 	export PATH=$(NATIVE_DIR)/bin:$$PATH; \
 	$(MAKE) -C $(CROSS_DIR) mysqld
 	touch $@
+
+#
+# Disk images
+#
+.PHONY: images
+images: mysql
+	genisoimage -l -r -o images/stubetc.iso images/stubetc
+	mkdir -p images/share || true
+	cp -f build/mysql/build-cross/sql/share/english/errmsg.sys images/share/errmsg.sys
+	genisoimage -l -r -o images/share.iso images/share
 
 .PHONY: clean
 clean:

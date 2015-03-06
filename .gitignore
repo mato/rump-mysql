@@ -1,3 +1,4 @@
 .*.sw?
 build/
 images/*.iso
+images/share

@@ -13,3 +13,8 @@ SET( HAVE_LLVM_LIBCPP_EXITCODE
 SET( HAVE_SIGWAIT
      "1"
      CACHE STRING "Have sigwait()" FORCE)
+
+# Don't try to use times(2) in my_timer routines.
+SET( HAVE_TIMES
+     "0"
+     CACHE STRING "Have times()" FORCE)

@@ -18,3 +18,8 @@ SET( HAVE_SIGWAIT
 SET( HAVE_TIMES
      "0"
      CACHE STRING "Have times()" FORCE)
+
+# Disable pthread_attr_setstacksize(), not working yet.
+SET( HAVE_PTHREAD_ATTR_SETSTACKSIZE
+     "0"
+     CACHE STRING "Have pthread_attr_setstacksize()" FORCE)

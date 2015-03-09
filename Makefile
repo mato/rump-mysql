@@ -4,14 +4,15 @@
 all: mysql images
 
 .PHONY: mysql
-mysql: build/mysql_cross_build_stamp
+mysql: build/mysql_bootstrap_stamp
 
 #
 # 1. Extract mysql distribution tarball
 #
+BUILD_DIR=$(abspath build/mysql)
 build/mysql_extract_stamp: dist/mysql-5.6.23.tar.gz
-	mkdir -p build/mysql
-	tar -C build/mysql --strip=1 -xzf $<
+	mkdir -p $(BUILD_DIR)
+	tar -C $(BUILD_DIR) --strip=1 -xzf $<
 	touch $@
 
 #
@@ -24,17 +25,17 @@ build/mysql_extract_stamp: dist/mysql-5.6.23.tar.gz
 # already provided.
 #
 build/mysql_patch_stamp: CMakeLists.txt.patch build/mysql_extract_stamp
-	( cd build/mysql; patch -p0 < ../../CMakeLists.txt.patch )
-	( cd build/mysql; patch -p0 < ../../my_global.h.patch )
+	( cd $(BUILD_DIR); patch -p0 < ../../CMakeLists.txt.patch )
+	( cd $(BUILD_DIR); patch -p0 < ../../my_global.h.patch )
 	touch $@
 
 #
-# 3. Build native binaries used by cross-build.
+# 3. Build native binaries used by cross-build and bootstrap.
 #
-NATIVE_DIR=$(abspath build/mysql/build-native)
+NATIVE_DIR=$(abspath $(BUILD_DIR)/build-native)
 build/mysql_native_stamp: build/mysql_patch_stamp
 	mkdir $(NATIVE_DIR) || true
-	cd $(NATIVE_DIR) i&& cmake \
+	cd $(NATIVE_DIR) && cmake \
 	    -DWITH_SSL=system \
 	    -DWITH_ZLIB=system \
 	    -DDISABLE_SHARED=ON \
@@ -42,8 +43,9 @@ build/mysql_native_stamp: build/mysql_patch_stamp
 	    -DWITHOUT_PERFSCHEMA_STORAGE_ENGINE=1 \
 	    ..
 	$(MAKE) -C $(NATIVE_DIR)/sql gen_lex_hash
-	$(MAKE) -C $(NATIVE_DIR)/scripts comp_sql
-	$(MAKE) -C $(NATIVE_DIR)/extra comp_err
+	$(MAKE) -C $(NATIVE_DIR)/scripts
+	$(MAKE) -C $(NATIVE_DIR)/extra
+	$(MAKE) -C $(NATIVE_DIR) mysqld
 	mkdir $(NATIVE_DIR)/bin || true
 	cp $(NATIVE_DIR)/sql/gen_lex_hash \
 	    $(NATIVE_DIR)/scripts/comp_sql \
@@ -54,7 +56,7 @@ build/mysql_native_stamp: build/mysql_patch_stamp
 #
 # 4. Cross-build mysqld (CMake step)
 #
-CROSS_DIR=$(abspath build/mysql/build-cross)
+CROSS_DIR=$(abspath $(BUILD_DIR)/build-cross)
 # TODO: Detect where app-tools are installed.
 RUMP_ROOT=/home/mato/projects/rumpkernel/rumprun/rump
 build/mysql_cross_cmake_stamp: build/mysql_native_stamp
@@ -81,6 +83,20 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 	touch $@
 
 #
+# 6. Bootstrap MySQL system tables.
+#
+build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
+	perl $(NATIVE_DIR)/scripts/mysql_install_db \
+	    --builddir=$(NATIVE_DIR) \
+	    --srcdir=$(BUILD_DIR) \
+	    --datadir=$(abspath images/data) \
+	    --lc-messages-dir=$(NATIVE_DIR)/sql/share/english \
+	    --default-storage-engine=myisam \
+	    --default-tmp-storage-engine=myisam \
+	    --cross-bootstrap
+	touch $@
+
+#
 # Disk images
 #
 .PHONY: images
@@ -92,4 +108,4 @@ images: mysql
 
 .PHONY: clean
 clean:
-	rm -rf build
+	rm -rf build images/data images/share

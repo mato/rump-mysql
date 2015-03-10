@@ -86,10 +86,11 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 # 6. Bootstrap MySQL system tables.
 #
 build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
+	mkdir -p images/data || true
 	perl $(NATIVE_DIR)/scripts/mysql_install_db \
 	    --builddir=$(NATIVE_DIR) \
 	    --srcdir=$(BUILD_DIR) \
-	    --datadir=$(abspath images/data) \
+	    --datadir=$(abspath images/data/mysql) \
 	    --lc-messages-dir=$(NATIVE_DIR)/sql/share/english \
 	    --default-storage-engine=myisam \
 	    --default-tmp-storage-engine=myisam \
@@ -101,11 +102,16 @@ build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
 #
 .PHONY: images
 images: mysql
-	genisoimage -l -r -o images/stubetc.iso images/stubetc
-	mkdir -p images/share || true
-	cp -f build/mysql/build-cross/sql/share/english/errmsg.sys images/share/errmsg.sys
-	genisoimage -l -r -o images/share.iso images/share
+	./rumprun-makefs -t cd9660 images/stubetc.iso images/stubetc
+	mkdir -p images/data/share || true
+	cp -f build/mysql/build-cross/sql/share/english/errmsg.sys \
+		images/data/share/errmsg.sys
+	./rumprun-makefs -u 1 -g 1 images/data.ffs images/data
+
+.PHONY: clean-images
+clean-images:
+	rm -rf images/data images/*.iso images/*.ffs build/mysql_bootstrap_stamp
 
 .PHONY: clean
-clean:
-	rm -rf build images/data images/share
+clean: clean-images
+	rm -rf build

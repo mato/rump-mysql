@@ -83,11 +83,14 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 	touch $@
 
 #
-# 6. Bootstrap MySQL system tables.
+# 6. Bootstrap MySQL server using the native mysqld.
 #
 build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
 	mkdir -p images/data || true
+	mkdir -p images/data/share || true
+	cp -rf $(NATIVE_DIR)/sql/share/english images/data/share
 	perl $(NATIVE_DIR)/scripts/mysql_install_db \
+	    --no-defaults \
 	    --builddir=$(NATIVE_DIR) \
 	    --srcdir=$(BUILD_DIR) \
 	    --datadir=$(abspath images/data/mysql) \
@@ -95,6 +98,13 @@ build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
 	    --default-storage-engine=myisam \
 	    --default-tmp-storage-engine=myisam \
 	    --cross-bootstrap
+	cat mysql_rump_bootstrap.sql | \
+	    $(NATIVE_DIR)/sql/mysqld \
+	    --no-defaults \
+	    -b $(abspath images/data) -h mysql \
+	    --default-storage-engine=myisam \
+	    --default-tmp-storage-engine=myisam \
+	    --bootstrap
 	touch $@
 
 #
@@ -103,9 +113,6 @@ build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
 .PHONY: images
 images: mysql
 	./rumprun-makefs -t cd9660 images/stubetc.iso images/stubetc
-	mkdir -p images/data/share || true
-	cp -f build/mysql/build-cross/sql/share/english/errmsg.sys \
-		images/data/share/errmsg.sys
 	./rumprun-makefs -u 1 -g 1 images/data.ffs images/data
 
 .PHONY: clean-images

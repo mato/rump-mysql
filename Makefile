@@ -85,25 +85,22 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 #
 # 6. Bootstrap MySQL server using the native mysqld.
 #
+DATA_DIR=$(abspath images/data)
 build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
-	mkdir -p images/data || true
-	mkdir -p images/data/share || true
-	cp -rf $(NATIVE_DIR)/sql/share/english images/data/share
+	mkdir -p $(DATA_DIR) $(DATA_DIR)/share|| true
+	cp -f my.cnf $(DATA_DIR)
+	cp -rf $(NATIVE_DIR)/sql/share/english $(DATA_DIR)/share
 	perl $(NATIVE_DIR)/scripts/mysql_install_db \
-	    --no-defaults \
+	    --defaults-file=$(DATA_DIR)/my.cnf \
 	    --builddir=$(NATIVE_DIR) \
 	    --srcdir=$(BUILD_DIR) \
-	    --datadir=$(abspath images/data/mysql) \
-	    --lc-messages-dir=$(NATIVE_DIR)/sql/share/english \
-	    --default-storage-engine=myisam \
-	    --default-tmp-storage-engine=myisam \
+	    --datadir=$(DATA_DIR)/mysql \
+	    --lc-messages-dir=$(DATA_DIR)/share \
 	    --cross-bootstrap
 	cat mysql_rump_bootstrap.sql | \
 	    $(NATIVE_DIR)/sql/mysqld \
-	    --no-defaults \
-	    -b $(abspath images/data) -h mysql \
-	    --default-storage-engine=myisam \
-	    --default-tmp-storage-engine=myisam \
+	    --defaults-file=$(DATA_DIR)/my.cnf \
+	    --basedir=$(DATA_DIR) \
 	    --bootstrap
 	touch $@
 

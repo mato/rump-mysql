@@ -3,8 +3,7 @@
 #
 all: mysql images
 
-.PHONY: mysql
-mysql: build/mysql_bootstrap_stamp
+mysql: build/mysql_cross_build_stamp
 
 #
 # 1. Extract mysql distribution tarball
@@ -86,7 +85,7 @@ build/mysql_cross_build_stamp: build/mysql_cross_cmake_stamp
 # 6. Bootstrap MySQL server using the native mysqld.
 #
 DATA_DIR=$(abspath images/data)
-build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
+images/data: build/mysql_native_stamp
 	mkdir -p $(DATA_DIR) $(DATA_DIR)/share|| true
 	cp -f my.cnf $(DATA_DIR)
 	cp -rf $(NATIVE_DIR)/sql/share/english $(DATA_DIR)/share
@@ -107,14 +106,32 @@ build/mysql_bootstrap_stamp: build/mysql_cross_build_stamp
 #
 # Disk images
 #
-.PHONY: images
-images: mysql
+images: images/stubetc.iso images/data.ffs
+
+images/stubetc.iso: images/stubetc
 	./rumprun-makefs -t cd9660 images/stubetc.iso images/stubetc
+
+images/data.ffs: images/data
 	./rumprun-makefs -u 1 -g 1 images/data.ffs images/data
+
+#
+# Re-link mysqld, used during development
+#
+.PHONY: relink
+relink:
+	rm -f $(CROSS_DIR)/sql/mysqld
+	rm -f build/mysql_cross_build_stamp
+	$(MAKE) mysql
+
+#
+# Force re-build images from scratch, used during development
+#
+.PHONY: reimage
+reimage: clean-images images
 
 .PHONY: clean-images
 clean-images:
-	rm -rf images/data images/*.iso images/*.ffs build/mysql_bootstrap_stamp
+	rm -rf images/data images/*.iso images/*.ffs
 
 .PHONY: clean
 clean: clean-images

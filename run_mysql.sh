@@ -1,6 +1,6 @@
 #!/bin/sh
 set -x
-rumprun xen -M 128 -i \
+rumprun xen "$@" -M 128 -i \
     -b images/stubetc.iso,/etc \
     -b images/data.ffs,/data \
     -n inet,static,10.9.1.200/22 \

@@ -23,3 +23,9 @@ SET( HAVE_TIMES
 SET( HAVE_PTHREAD_ATTR_SETSTACKSIZE
      "0"
      CACHE STRING "Have pthread_attr_setstacksize()" FORCE)
+
+# Forcibly enable IPv6 support. The build checks for this fail for some
+# as-yet-undebugged reason.
+SET( HAVE_IPV6
+     "1"
+     CACHE STRING "IPv6, dammit" FORCE)

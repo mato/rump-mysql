@@ -9,7 +9,7 @@ mysql: build/mysql_cross_build_stamp
 # 1. Extract mysql distribution tarball
 #
 BUILD_DIR=$(abspath build/mysql)
-build/mysql_extract_stamp: dist/mysql-5.6.23.tar.gz
+build/mysql_extract_stamp: dist/mysql-5.6.24.tar.gz
 	mkdir -p $(BUILD_DIR)
 	tar -C $(BUILD_DIR) --strip=1 -xzf $<
 	touch $@
@@ -23,9 +23,13 @@ build/mysql_extract_stamp: dist/mysql-5.6.23.tar.gz
 # my_global.h - broken logic tries to define __func__ even though this is
 # already provided.
 #
+# sql_table.cc - fixes a bug introducted in 5.6.24 which breaks the build when
+# the partition storage engine is disabled.
+#
 build/mysql_patch_stamp: CMakeLists.txt.patch build/mysql_extract_stamp
 	( cd $(BUILD_DIR); patch -p0 < ../../CMakeLists.txt.patch )
 	( cd $(BUILD_DIR); patch -p0 < ../../my_global.h.patch )
+	( cd $(BUILD_DIR); patch -p0 < ../../sql_table.cc.patch )
 	touch $@
 
 #
@@ -41,12 +45,13 @@ build/mysql_native_stamp: build/mysql_patch_stamp
 	    -DFEATURE_SET=small \
 	    -DWITHOUT_PERFSCHEMA_STORAGE_ENGINE=1 \
 	    ..
-	$(MAKE) -C $(NATIVE_DIR)/sql gen_lex_hash
+	$(MAKE) -C $(NATIVE_DIR)/sql gen_lex_hash gen_lex_token
 	$(MAKE) -C $(NATIVE_DIR)/scripts
 	$(MAKE) -C $(NATIVE_DIR)/extra
 	$(MAKE) -C $(NATIVE_DIR) mysqld
 	mkdir $(NATIVE_DIR)/bin || true
 	cp $(NATIVE_DIR)/sql/gen_lex_hash \
+	    $(NATIVE_DIR)/sql/gen_lex_token \
 	    $(NATIVE_DIR)/scripts/comp_sql \
 	    $(NATIVE_DIR)/extra/comp_err \
 	    $(NATIVE_DIR)/bin/

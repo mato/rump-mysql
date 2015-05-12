@@ -3,7 +3,7 @@ set -x
 rumprun xen "$@" -M 128 -i \
     -b images/stubetc.iso,/etc \
     -b images/data.ffs,/data \
-    -n inet,static,10.9.1.200/22 \
+    -n inet6,auto \
     -- \
     build/mysql/build-cross/sql/mysqld \
-        --defaults-file=/data/my.cnf --basedir=/data --user=daemon
+        --defaults-file=/data/my.cnf --basedir=/data --user=daemon --thread-handling=no-threads

@@ -6,4 +6,4 @@ rumprun xen "$@" -M 128 -i \
     -n inet6,auto \
     -- \
     build/mysql/build-cross/sql/mysqld \
-        --defaults-file=/data/my.cnf --basedir=/data --user=daemon --thread-handling=no-threads
+        --defaults-file=/data/my.cnf --basedir=/data --user=daemon
